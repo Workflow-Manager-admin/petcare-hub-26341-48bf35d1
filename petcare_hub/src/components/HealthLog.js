@@ -312,12 +312,35 @@ function HealthLog() {
                     {petLogs
                       .sort((a, b) => (a.date > b.date ? -1 : 1))
                       .map((log) => (
-                        <li key={log.id} style={{ marginBottom: 7 }}>
+                        <li key={log.id} style={{ marginBottom: 7, display: "flex", alignItems: "center" }}>
                           <span style={{ fontWeight: 500 }}>{log.eventType || "Health Event"}</span>:{" "}
                           <span>{log.description}</span>{" "}
                           <span style={{ color: "#888", fontSize: 12 }}>
                             {log.date ? `on ${log.date}` : ""}
                           </span>
+                          {/* Delete button for this health event */}
+                          <button
+                            className="btn"
+                            style={{
+                              marginLeft: 12,
+                              background: "var(--kavia-orange)",
+                              color: "#fff",
+                              borderRadius: 6,
+                              fontSize: 13,
+                              padding: "3px 13px",
+                            }}
+                            aria-label={`Delete health event "${log.eventType}"`}
+                            title="Delete health event"
+                            onClick={() => {
+                              if (window.confirm("Delete this health event?")) {
+                                setHealthLogs(prev =>
+                                  prev.filter((h) => h.id !== log.id)
+                                );
+                              }
+                            }}
+                          >
+                            Delete
+                          </button>
                         </li>
                       ))}
                   </ul>
