@@ -195,13 +195,26 @@ function TaskScheduler() {
               className="btn btn-large"
               style={{ marginBottom: 25 }}
               aria-label="Add Task"
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                setShowForm(true);
+                setEditId(null);
+                setForm({
+                  description: "",
+                  petId: "",
+                  category: "",
+                  recurrence: "once",
+                  customRecurrence: "",
+                  time: "",
+                  notes: "",
+                });
+                setFormError("");
+              }}
             >
               Add Task
             </button>
           ) : (
             <form
-              aria-label="Add Task Form"
+              aria-label={editId ? "Edit Task Form" : "Add Task Form"}
               style={{
                 background: "#fafafa",
                 borderRadius: 9,
@@ -210,7 +223,7 @@ function TaskScheduler() {
                 boxShadow: "var(--shadow)",
                 maxWidth: 420,
               }}
-              onSubmit={handleAddTask}
+              onSubmit={handleAddOrEditTask}
             >
               {/* Task Name */}
               <label style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
@@ -404,32 +417,21 @@ function TaskScheduler() {
                 <button
                   type="submit"
                   className="btn btn-large"
-                  aria-label="Save New Task"
+                  aria-label={editId ? "Save changes to task" : "Save new task"}
+                  style={{ background: editId ? "var(--primary)" : undefined }}
                 >
-                  Save Task
+                  {editId ? "Save Changes" : "Save Task"}
                 </button>
                 <button
                   type="button"
                   className="btn"
-                  aria-label="Cancel Add Task"
+                  aria-label="Cancel Add/Edit Task"
                   style={{
                     background: "transparent",
                     color: "var(--primary)",
                     borderColor: "#e0e0e0"
                   }}
-                  onClick={() => {
-                    setForm({
-                      description: "",
-                      petId: "",
-                      category: "",
-                      recurrence: "once",
-                      customRecurrence: "",
-                      time: "",
-                      notes: "",
-                    });
-                    setShowForm(false);
-                    setFormError("");
-                  }}
+                  onClick={handleCancelForm}
                 >
                   Cancel
                 </button>
