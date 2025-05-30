@@ -53,7 +53,7 @@ function TaskScheduler() {
   };
 
   // Form validate and submit
-  const handleAddTask = (e) => {
+  const handleAddOrEditTask = (e) => {
     e.preventDefault();
     // Validate input
     if (!form.description.trim()) {
@@ -87,21 +87,82 @@ function TaskScheduler() {
         ? form.customRecurrence.trim()
         : form.recurrence.charAt(0).toUpperCase() + form.recurrence.slice(1);
 
-    // New task record
-    const newTask = {
-      id: genTaskId(),
-      petId: form.petId,
-      category: form.category,
-      description: form.description.trim(),
-      frequency: frequency,
-      times: form.time,
-      notes: form.notes.trim(),
-      completed: false,
-      // Optional: set current date for "once" or for filtering (may adapt later)
-      date: form.recurrence === "once" ? new Date().toISOString().slice(0, 10) : undefined,
-    };
+    if (editId) {
+      // Edit mode: update the specific task
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === editId
+            ? {
+                ...task,
+                petId: form.petId,
+                category: form.category,
+                description: form.description.trim(),
+                frequency: frequency,
+                times: form.time,
+                notes: form.notes.trim(),
+                // don't reset 'completed' and 'date' unless recurrence changes to 'once'
+                date: form.recurrence === "once"
+                  ? (task.date || new Date().toISOString().slice(0, 10))
+                  : undefined,
+              }
+            : task
+        )
+      );
+    } else {
+      // Add mode
+      const newTask = {
+        id: genTaskId(),
+        petId: form.petId,
+        category: form.category,
+        description: form.description.trim(),
+        frequency: frequency,
+        times: form.time,
+        notes: form.notes.trim(),
+        completed: false,
+        // Optional: set current date for "once" or for filtering (may adapt later)
+        date: form.recurrence === "once" ? new Date().toISOString().slice(0, 10) : undefined,
+      };
+      setTasks((prevTasks) => [...prevTasks, newTask]);
+    }
+    // Reset state after add/edit
+    setForm({
+      description: "",
+      petId: "",
+      category: "",
+      recurrence: "once",
+      customRecurrence: "",
+      time: "",
+      notes: "",
+    });
+    setEditId(null);
+    setShowForm(false);
+    setFormError("");
+  };
 
-    setTasks((prevTasks) => [...prevTasks, newTask]);
+  // Handler for Edit button: prepopulate form for editing a task
+  const handleEditTask = (task) => {
+    setForm({
+      description: task.description || "",
+      petId: task.petId || "",
+      category: task.category || "",
+      recurrence:
+        ["Once", "Daily", "Weekly", "Custom"].map((rec) => rec.toLowerCase()).includes((task.frequency || "").toLowerCase())
+          ? (task.frequency || "").toLowerCase()
+          : "custom",
+      customRecurrence:
+        !["Once", "Daily", "Weekly"].includes((task.frequency || ""))
+          ? (task.frequency || "")
+          : "",
+      time: Array.isArray(task.times) ? task.times[0] || "" : (task.times || ""),
+      notes: task.notes || "",
+    });
+    setShowForm(true);
+    setEditId(task.id);
+    setFormError("");
+  };
+
+  // Handler for cancel button to clear state
+  const handleCancelForm = () => {
     setForm({
       description: "",
       petId: "",
@@ -112,6 +173,7 @@ function TaskScheduler() {
       notes: "",
     });
     setShowForm(false);
+    setEditId(null);
     setFormError("");
   };
 
