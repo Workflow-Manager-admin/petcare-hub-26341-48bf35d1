@@ -484,6 +484,22 @@ function TaskScheduler() {
                             className="btn"
                             style={{
                               marginLeft: 12,
+                              background: "var(--primary)",
+                              color: "#fff",
+                              borderRadius: 6,
+                              fontSize: 13,
+                              padding: "3px 12px"
+                            }}
+                            aria-label={`Edit task "${task.description}"`}
+                            title="Edit task"
+                            onClick={() => handleEditTask(task)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn"
+                            style={{
+                              marginLeft: 8,
                               background: "var(--kavia-orange)",
                               color: "#fff",
                               borderRadius: 6,
