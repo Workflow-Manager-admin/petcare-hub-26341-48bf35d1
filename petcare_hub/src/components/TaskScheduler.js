@@ -225,6 +225,20 @@ function TaskScheduler() {
               }}
               onSubmit={handleAddOrEditTask}
             >
+              {editId && (
+                <div
+                  style={{
+                    fontWeight: 600,
+                    color: "var(--primary)",
+                    fontSize: 16,
+                    letterSpacing: 0.5,
+                    marginBottom: 10,
+                  }}
+                  role="status"
+                >
+                  Editing Task
+                </div>
+              )}
               {/* Task Name */}
               <label style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                 Task Name*
