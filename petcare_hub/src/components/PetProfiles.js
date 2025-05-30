@@ -21,6 +21,9 @@ function PetProfiles() {
   const [formError, setFormError] = useState("");
   const photoInputRef = useRef();
 
+  // For editing:
+  const [editId, setEditId] = useState(null);
+
   // Handle form value changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,8 +57,8 @@ function PetProfiles() {
   const genId = () =>
     "pet_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-  // Validate and add pet
-  const handleAddPet = (e) => {
+  // Validate and add or edit pet
+  const handleAddOrEditPet = (e) => {
     e.preventDefault();
     // Basic validation
     if (!form.name.trim() || !form.species.trim() || !form.breed.trim() || !form.age) {
@@ -66,19 +69,38 @@ function PetProfiles() {
       setFormError("Age must be a non-negative number.");
       return;
     }
-    // Save pet
-    setPets((oldPets) => [
-      ...oldPets,
-      {
-        id: genId(),
-        name: form.name.trim(),
-        species: form.species.trim(),
-        breed: form.breed.trim(),
-        age: parseInt(form.age, 10),
-        photo: form.photoData || null,
-        notes: "",
-      },
-    ]);
+    if (editId) {
+      // Edit Mode - update the pet (immutably)
+      setPets((prevPets) =>
+        prevPets.map((pet) =>
+          pet.id === editId
+            ? {
+                ...pet,
+                name: form.name.trim(),
+                species: form.species.trim(),
+                breed: form.breed.trim(),
+                age: parseInt(form.age, 10),
+                photo: form.photoData !== undefined && form.photoData !== null ? form.photoData : pet.photo,
+                // notes remain for now (no notes editor)
+              }
+            : pet
+        )
+      );
+    } else {
+      // Add Mode
+      setPets((oldPets) => [
+        ...oldPets,
+        {
+          id: genId(),
+          name: form.name.trim(),
+          species: form.species.trim(),
+          breed: form.breed.trim(),
+          age: parseInt(form.age, 10),
+          photo: form.photoData || null,
+          notes: "",
+        },
+      ]);
+    }
     setForm({
       name: "",
       species: "",
@@ -88,6 +110,7 @@ function PetProfiles() {
       photoData: null,
     });
     setFormError("");
+    setEditId(null);
     setShowForm(false);
     if (photoInputRef.current) {
       photoInputRef.current.value = ""; // Reset file input visually
@@ -99,6 +122,59 @@ function PetProfiles() {
   const handleDeletePet = (id) => {
     if (window.confirm("Are you sure you want to delete this pet profile?")) {
       setPets((oldPets) => oldPets.filter((pet) => pet.id !== id));
+      if (showForm && editId === id) {
+        // If editing this pet, close the form
+        setShowForm(false);
+        setEditId(null);
+        setForm({
+          name: "",
+          species: "",
+          breed: "",
+          age: "",
+          photo: null,
+          photoData: null,
+        });
+        setFormError("");
+        if (photoInputRef.current) {
+          photoInputRef.current.value = "";
+        }
+      }
+    }
+  };
+
+  // Handler for Edit button: prepopulate the form with pet data
+  const handleEditPet = (pet) => {
+    setForm({
+      name: pet.name || "",
+      species: pet.species || "",
+      breed: pet.breed || "",
+      age: pet.age !== undefined && pet.age !== null ? String(pet.age) : "",
+      photo: null, // New upload will override
+      photoData: pet.photo || null,
+    });
+    setFormError("");
+    setEditId(pet.id);
+    setShowForm(true);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+  };
+
+  // Handler for Cancel button resets edit state
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditId(null);
+    setForm({
+      name: "",
+      species: "",
+      breed: "",
+      age: "",
+      photo: null,
+      photoData: null,
+    });
+    setFormError("");
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
     }
   };
 
@@ -159,6 +235,25 @@ function PetProfiles() {
                   </div>
                 )}
               </div>
+              {/* Edit Button for this pet profile */}
+              <button
+                className="btn"
+                aria-label={`Edit pet profile for ${pet.name || "pet"}`}
+                title="Edit pet"
+                style={{
+                  background: "var(--primary)",
+                  color: "#fff",
+                  padding: "6px 14px",
+                  fontSize: 14,
+                  borderRadius: 7,
+                  marginLeft: 5,
+                  fontWeight: 600,
+                  border: "none",
+                }}
+                onClick={() => handleEditPet(pet)}
+              >
+                Edit
+              </button>
               {/* Delete Button for this pet profile */}
               <button
                 className="btn"
@@ -184,7 +279,7 @@ function PetProfiles() {
       )}
       {showForm ? (
         <form
-          aria-label="Add new pet form"
+          aria-label={editId ? "Edit pet form" : "Add new pet form"}
           style={{
             background: "#fafafa",
             borderRadius: 9,
@@ -193,7 +288,7 @@ function PetProfiles() {
             boxShadow: "var(--shadow)",
             maxWidth: 420,
           }}
-          onSubmit={handleAddPet}
+          onSubmit={handleAddOrEditPet}
         >
           <div style={{ marginBottom: 15 }}>
             <label style={{ fontWeight: 600, display: "block", marginBottom: 4 }}>
@@ -330,29 +425,15 @@ function PetProfiles() {
           )}
 
           <div style={{ display: "flex", gap: 14, marginTop: 10 }}>
-            <button type="submit" className="btn btn-large" aria-label="Save pet profile">
-              Save Pet
+            <button type="submit" className="btn btn-large" aria-label={editId ? "Save changes to pet profile" : "Save pet profile"}>
+              {editId ? "Save Changes" : "Save Pet"}
             </button>
             <button
               type="button"
               className="btn"
-              aria-label="Cancel add pet"
+              aria-label="Cancel add/edit pet"
               style={{ background: "transparent", color: "var(--primary)", borderColor: "#e0e0e0" }}
-              onClick={() => {
-                setShowForm(false);
-                setForm({
-                  name: "",
-                  species: "",
-                  breed: "",
-                  age: "",
-                  photo: null,
-                  photoData: null,
-                });
-                setFormError("");
-                if (photoInputRef.current) {
-                  photoInputRef.current.value = "";
-                }
-              }}
+              onClick={handleCancel}
             >
               Cancel
             </button>
@@ -363,7 +444,22 @@ function PetProfiles() {
           className="btn btn-large"
           style={{ marginTop: 20 }}
           aria-label="Add Pet"
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setShowForm(true);
+            setEditId(null);
+            setForm({
+              name: "",
+              species: "",
+              breed: "",
+              age: "",
+              photo: null,
+              photoData: null,
+            });
+            setFormError("");
+            if (photoInputRef.current) {
+              photoInputRef.current.value = "";
+            }
+          }}
         >
           Add Pet
         </button>
