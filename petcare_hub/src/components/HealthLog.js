@@ -19,6 +19,8 @@ function HealthLog() {
   });
   const [formError, setFormError] = useState("");
   const [formForPetId, setFormForPetId] = useState(null); // If "Add Event" button under a pet clicked
+  // New state for editing functionality
+  const [editId, setEditId] = useState(null);
 
   // Event type options
   const EVENT_TYPE_OPTIONS = [
@@ -42,9 +44,10 @@ function HealthLog() {
     setFormError("");
   };
 
-  // Handler to display the form, optionally preselecting pet
+  // Handler to display the form, optionally preselecting pet, with reset (for add mode)
   const handleShowForm = (petId) => {
     setFormForPetId(petId || null);
+    setEditId(null);
     setForm({
       petId: petId || "",
       eventType: "",
@@ -55,10 +58,25 @@ function HealthLog() {
     setFormError("");
   };
 
-  // Handler for cancel/add form
+  // Handler to enter edit mode, populating the form with existing health event data
+  const handleEditEvent = (event) => {
+    setEditId(event.id);
+    setFormForPetId(event.petId);
+    setForm({
+      petId: event.petId,
+      eventType: event.eventType || "",
+      date: event.date || "",
+      notes: event.description || "",
+    });
+    setShowForm(true);
+    setFormError("");
+  };
+
+  // Handler for cancel/add/edit form
   const handleCancelForm = () => {
     setShowForm(false);
     setFormForPetId(null);
+    setEditId(null);
     setForm({
       petId: "",
       eventType: "",
@@ -68,8 +86,8 @@ function HealthLog() {
     setFormError("");
   };
 
-  // Handler for form submit (add health event)
-  const handleAddHealthEvent = (e) => {
+  // Handler for form submit (add/update health event)
+  const handleAddOrEditHealthEvent = (e) => {
     e.preventDefault();
     if (!form.petId) {
       setFormError("Select a pet.");
@@ -83,20 +101,38 @@ function HealthLog() {
       setFormError("Please provide a date.");
       return;
     }
-    // Notes can be optional
-    setHealthLogs((prev) => [
-      ...prev,
-      {
-        id: genHealthEventId(),
-        petId: form.petId,
-        eventType: form.eventType,
-        description: form.notes.trim(),
-        date: form.date,
-        // attachments: undefined, // Out of scope for now
-      },
-    ]);
+    if (editId) {
+      // Edit mode: update the specific health event in context
+      setHealthLogs((prev) =>
+        prev.map((h) =>
+          h.id === editId
+            ? {
+                ...h,
+                petId: form.petId,
+                eventType: form.eventType,
+                description: form.notes.trim(),
+                date: form.date,
+              }
+            : h
+        )
+      );
+    } else {
+      // Add mode: Add new event as before
+      setHealthLogs((prev) => [
+        ...prev,
+        {
+          id: genHealthEventId(),
+          petId: form.petId,
+          eventType: form.eventType,
+          description: form.notes.trim(),
+          date: form.date,
+          // attachments: undefined, // Out of scope for now
+        },
+      ]);
+    }
     setShowForm(false);
     setFormForPetId(null);
+    setEditId(null);
     setForm({
       petId: "",
       eventType: "",
@@ -106,12 +142,12 @@ function HealthLog() {
     setFormError("");
   };
 
-  // Renders the add-event form (overlays list/head, displays at top or under relevant pet section)
+  // Renders the add/edit event form (overlays list/head, displays at top or under relevant pet section)
   function renderHealthLogForm() {
     return (
       <form
-        aria-label="Add Health Event"
-        onSubmit={handleAddHealthEvent}
+        aria-label={editId ? "Edit Health Event" : "Add Health Event"}
+        onSubmit={handleAddOrEditHealthEvent}
         style={{
           background: "#fafafa",
           borderRadius: 9,
@@ -123,7 +159,7 @@ function HealthLog() {
         }}
       >
         <div style={{ fontWeight: 600, color: "var(--primary)", fontSize: 16, marginBottom: 10 }}>
-          Add Health Event
+          {editId ? "Edit Health Event" : "Add Health Event"}
         </div>
         {/* Pet selector */}
         <label style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
@@ -240,15 +276,15 @@ function HealthLog() {
           <button
             type="submit"
             className="btn btn-large"
-            aria-label="Save health event"
+            aria-label={editId ? "Save/update health event" : "Save health event"}
             style={{ background: "var(--primary)" }}
           >
-            Save Event
+            {editId ? "Save Changes" : "Save Event"}
           </button>
           <button
             type="button"
             className="btn"
-            aria-label="Cancel add health event"
+            aria-label="Cancel add/edit health event"
             style={{
               background: "transparent",
               color: "var(--primary)",
@@ -318,11 +354,28 @@ function HealthLog() {
                           <span style={{ color: "#888", fontSize: 12 }}>
                             {log.date ? `on ${log.date}` : ""}
                           </span>
+                          {/* Edit button for this health event */}
+                          <button
+                            className="btn"
+                            style={{
+                              marginLeft: 8,
+                              background: "var(--primary)",
+                              color: "#fff",
+                              borderRadius: 6,
+                              fontSize: 13,
+                              padding: "3px 11px",
+                            }}
+                            aria-label={`Edit health event "${log.eventType}"`}
+                            title="Edit health event"
+                            onClick={() => handleEditEvent(log)}
+                          >
+                            Edit
+                          </button>
                           {/* Delete button for this health event */}
                           <button
                             className="btn"
                             style={{
-                              marginLeft: 12,
+                              marginLeft: 8,
                               background: "var(--kavia-orange)",
                               color: "#fff",
                               borderRadius: 6,
