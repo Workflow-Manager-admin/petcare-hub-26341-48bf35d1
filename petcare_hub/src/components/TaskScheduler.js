@@ -3,8 +3,7 @@ import { usePetCare } from "../PetCareContext";
 
 /**
  * TaskScheduler component for PetCare Hub.
- * Enables viewing, adding, and editing of recurring care tasks for each pet.
- * Now includes an "Add Task" form with validation and PetCareContext integration.
+ * Enables viewing, adding, editing, deleting, and marking care tasks as done, updating context and providing clear UI feedback.
  */
 // PUBLIC_INTERFACE
 function TaskScheduler() {
@@ -101,9 +100,10 @@ function TaskScheduler() {
                 times: form.time,
                 notes: form.notes.trim(),
                 // don't reset 'completed' and 'date' unless recurrence changes to 'once'
-                date: form.recurrence === "once"
-                  ? (task.date || new Date().toISOString().slice(0, 10))
-                  : undefined,
+                date:
+                  form.recurrence === "once"
+                    ? task.date || new Date().toISOString().slice(0, 10)
+                    : undefined,
               }
             : task
         )
@@ -120,7 +120,10 @@ function TaskScheduler() {
         notes: form.notes.trim(),
         completed: false,
         // Optional: set current date for "once" or for filtering (may adapt later)
-        date: form.recurrence === "once" ? new Date().toISOString().slice(0, 10) : undefined,
+        date:
+          form.recurrence === "once"
+            ? new Date().toISOString().slice(0, 10)
+            : undefined,
       };
       setTasks((prevTasks) => [...prevTasks, newTask]);
     }
@@ -146,14 +149,17 @@ function TaskScheduler() {
       petId: task.petId || "",
       category: task.category || "",
       recurrence:
-        ["Once", "Daily", "Weekly", "Custom"].map((rec) => rec.toLowerCase()).includes((task.frequency || "").toLowerCase())
+        ["Once", "Daily", "Weekly", "Custom"]
+          .map((rec) => rec.toLowerCase())
+          .includes((task.frequency || "").toLowerCase())
           ? (task.frequency || "").toLowerCase()
           : "custom",
-      customRecurrence:
-        !["Once", "Daily", "Weekly"].includes((task.frequency || ""))
-          ? (task.frequency || "")
-          : "",
-      time: Array.isArray(task.times) ? task.times[0] || "" : (task.times || ""),
+      customRecurrence: !["Once", "Daily", "Weekly"].includes(
+        task.frequency || ""
+      )
+        ? task.frequency || ""
+        : "",
+      time: Array.isArray(task.times) ? task.times[0] || "" : task.times || "",
       notes: task.notes || "",
     });
     setShowForm(true);
@@ -175,6 +181,15 @@ function TaskScheduler() {
     setShowForm(false);
     setEditId(null);
     setFormError("");
+  };
+
+  // Handler for toggling the completion of a task ("mark as done")
+  const handleToggleTaskDone = (taskId) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      )
+    );
   };
 
   return (
@@ -312,7 +327,9 @@ function TaskScheduler() {
                 >
                   <option value="">Choose category</option>
                   {TASK_CATEGORIES.map((cat) => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -337,13 +354,22 @@ function TaskScheduler() {
                   aria-label="Recurrence"
                 >
                   {RECURRENCE_OPTIONS.map((rec) => (
-                    <option key={rec.value} value={rec.value}>{rec.label}</option>
+                    <option key={rec.value} value={rec.value}>
+                      {rec.label}
+                    </option>
                   ))}
                 </select>
               </label>
               {/* Custom Recurrence */}
               {form.recurrence === "custom" && (
-                <label style={{ display: "block", fontWeight: 500, marginBottom: 4, marginTop: -8 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontWeight: 500,
+                    marginBottom: 4,
+                    marginTop: -8,
+                  }}
+                >
                   Custom Recurrence
                   <input
                     type="text"
@@ -404,7 +430,7 @@ function TaskScheduler() {
                     borderRadius: 7,
                     border: "1.2px solid #e0e0e0",
                     fontSize: 15,
-                    resize: "vertical"
+                    resize: "vertical",
                   }}
                   placeholder="Any extra info (optional)"
                   aria-label="Notes"
@@ -443,7 +469,7 @@ function TaskScheduler() {
                   style={{
                     background: "transparent",
                     color: "var(--primary)",
-                    borderColor: "#e0e0e0"
+                    borderColor: "#e0e0e0",
                   }}
                   onClick={handleCancelForm}
                 >
@@ -470,7 +496,14 @@ function TaskScheduler() {
                 >
                   <div style={{ fontWeight: 600, marginBottom: 5 }}>
                     {pet.name}
-                    <span style={{ fontWeight: 400, color: "#aaa", fontSize: 13, marginLeft: 8 }}>
+                    <span
+                      style={{
+                        fontWeight: 400,
+                        color: "#aaa",
+                        fontSize: 13,
+                        marginLeft: 8,
+                      }}
+                    >
                       {pet.species}
                     </span>
                   </div>
@@ -481,15 +514,61 @@ function TaskScheduler() {
                   ) : (
                     <ul style={{ margin: 0, paddingLeft: 12 }}>
                       {petTasks.map((task) => (
-                        <li key={task.id} style={{ marginBottom: 7, display: "flex", alignItems: "center" }}>
-                          <span>
+                        <li
+                          key={task.id}
+                          style={{
+                            marginBottom: 7,
+                            display: "flex",
+                            alignItems: "center",
+                            opacity: task.completed ? 0.47 : 1,
+                            textDecoration: task.completed
+                              ? "line-through"
+                              : "none",
+                          }}
+                        >
+                          {/* 'Mark as done' checkbox */}
+                          <input
+                            type="checkbox"
+                            checked={!!task.completed}
+                            onChange={() => handleToggleTaskDone(task.id)}
+                            aria-label={
+                              task.completed
+                                ? `Mark "${task.description}" as not done`
+                                : `Mark "${task.description}" as done`
+                            }
+                            style={{
+                              marginRight: 10,
+                              accentColor: "var(--primary)",
+                              width: 16,
+                              height: 16,
+                              cursor: "pointer",
+                            }}
+                          />
+                          <span
+                            style={{
+                              flex: 1,
+                              color: task.completed ? "#999" : "inherit",
+                            }}
+                          >
                             {task.description}{" "}
                             <span style={{ color: "#888", fontSize: 12 }}>
                               {task.frequency ? `(${task.frequency})` : ""}
-                              {task.times ? ` at ${Array.isArray(task.times) ? task.times.join(", ") : task.times}` : ""}
+                              {task.times
+                                ? ` at ${
+                                    Array.isArray(task.times)
+                                      ? task.times.join(", ")
+                                      : task.times
+                                  }`
+                                : ""}
                             </span>
                             {task.notes && (
-                              <span style={{ color: "#aaa", fontSize: 11, marginLeft: 4 }}>
+                              <span
+                                style={{
+                                  color: "#aaa",
+                                  fontSize: 11,
+                                  marginLeft: 4,
+                                }}
+                              >
                                 - {task.notes}
                               </span>
                             )}
@@ -502,7 +581,7 @@ function TaskScheduler() {
                               color: "#fff",
                               borderRadius: 6,
                               fontSize: 13,
-                              padding: "3px 12px"
+                              padding: "3px 12px",
                             }}
                             aria-label={`Edit task "${task.description}"`}
                             title="Edit task"
@@ -518,13 +597,15 @@ function TaskScheduler() {
                               color: "#fff",
                               borderRadius: 6,
                               fontSize: 13,
-                              padding: "3px 14px"
+                              padding: "3px 14px",
                             }}
                             aria-label={`Delete task "${task.description}"`}
                             title="Delete task"
                             onClick={() => {
                               // Remove task from global state using setTasks
-                              setTasks(prevTasks => prevTasks.filter(t => t.id !== task.id));
+                              setTasks((prevTasks) =>
+                                prevTasks.filter((t) => t.id !== task.id)
+                              );
                             }}
                           >
                             Delete
