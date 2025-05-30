@@ -5,8 +5,10 @@ import { usePetCare } from "../PetCareContext";
  * Settings component for PetCare Hub.
  * Provides the UI to manage in-app Reminders (add, view, delete).
  * Reminders are linked to a pet or general task, and stored in PetCareContext.
+ *
+ * Now includes: Simulated in-app notifications for reminders due within the next hour.
  */
- // PUBLIC_INTERFACE
+// PUBLIC_INTERFACE
 function Settings() {
   const { reminders, setReminders, pets, tasks } = usePetCare();
 
@@ -20,8 +22,11 @@ function Settings() {
   };
   const [form, setForm] = useState(initialForm);
   const [formError, setFormError] = useState("");
-  const [editId, setEditId] = useState(null); // If non-null, we're editing
-  const [showForm, setShowForm] = useState(false); // For modal-like editing if desired
+  const [editId, setEditId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  // For simulated notification pop-up
+  const [inAppAlert, setInAppAlert] = useState(null);
 
   // Handler for input change
   const handleInputChange = (e) => {
@@ -37,8 +42,8 @@ function Settings() {
   const genReminderId = () =>
     "rem_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-  // Add or update reminder (handles both add and edit)
   // PUBLIC_INTERFACE
+  // Add or update reminder (handles both add and edit)
   const handleAddOrEditReminder = (e) => {
     e.preventDefault();
     if (!form.title.trim()) {
@@ -96,14 +101,12 @@ function Settings() {
   };
 
   // PUBLIC_INTERFACE
-  /** Handles deletion of a reminder by id */
   const handleDeleteReminder = (reminderId) => {
     if (window.confirm("Delete this reminder?")) {
       setReminders((old) => old.filter((rem) => rem.id !== reminderId));
     }
   };
 
-  // Handler to enter edit mode: prepopulate form, set editId, show form at the top
   // PUBLIC_INTERFACE
   const handleEditReminder = (rem) => {
     setForm({
@@ -129,7 +132,6 @@ function Settings() {
   // For selection: show pets and tasks
   const petOptions = pets || [];
   const taskOptions = tasks || [];
-
   // Sort reminders by dueDate
   const sortedReminders = (reminders || []).slice().sort((a, b) =>
     (a.dueDate || "") > (b.dueDate || "") ? 1 : -1
@@ -147,13 +149,26 @@ function Settings() {
   }
   const soonReminders = getSoonReminders();
 
+  // In-app notification simulation (shows only once per page load for due reminders in the next hour)
   useEffect(() => {
     if (soonReminders.length > 0) {
-      // Simulate alert (browser alert is annoying, instead consider highlight)
-      // Uncomment to use window alert:
-      // window.alert(`Upcoming reminder: ${soonReminders[0].title}`);
+      // Set a notification that auto-dismisses after 6 seconds
+      setInAppAlert({
+        msg: `⏰ Reminder: "${soonReminders[0].title}" is due soon!`,
+        id: soonReminders[0].id,
+      });
+      const timeout = setTimeout(() => {
+        setInAppAlert(null);
+      }, 6000);
+      return () => clearTimeout(timeout);
+    } else {
+      setInAppAlert(null);
     }
+    // eslint-disable-next-line
   }, [soonReminders.length]);
+
+  // Alert close handler
+  const closeInAppAlert = () => setInAppAlert(null);
 
   return (
     <section aria-label="Settings" style={{ width: "100%" }}>
