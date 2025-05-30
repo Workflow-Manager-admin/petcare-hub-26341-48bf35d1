@@ -10,18 +10,20 @@ import { usePetCare } from "../PetCareContext";
 function Settings() {
   const { reminders, setReminders, pets, tasks } = usePetCare();
 
-  // Form state for new reminder
+  // Form state for reminder add/edit
   const initialForm = {
     title: "",
-    petOrTask: "", // will store either petId or taskId, or "" (none/general)
-    type: "pet",   // "pet" or "task"
+    petOrTask: "", // either petId or taskId or "" for general
+    type: "pet",   // pet or task
     dueDateTime: "",
     notes: "",
   };
   const [form, setForm] = useState(initialForm);
   const [formError, setFormError] = useState("");
+  const [editId, setEditId] = useState(null); // If non-null, we're editing
+  const [showForm, setShowForm] = useState(false); // For modal-like editing if desired
 
-  // Handler for form input change
+  // Handler for input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm((old) => ({
@@ -31,13 +33,13 @@ function Settings() {
     setFormError("");
   };
 
-  // Unique Reminder ID generator
+  // Generates a unique reminder ID
   const genReminderId = () =>
     "rem_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
+  // Add or update reminder (handles both add and edit)
   // PUBLIC_INTERFACE
-  /** Handles add reminder form submission, with validation and update of PetCareContext */
-  const handleAddReminder = (e) => {
+  const handleAddOrEditReminder = (e) => {
     e.preventDefault();
     if (!form.title.trim()) {
       setFormError("Reminder title is required.");
@@ -55,21 +57,42 @@ function Settings() {
       setFormError("Please select a date and time.");
       return;
     }
-    // Reminder object structure
-    setReminders((old) => [
-      ...old,
-      {
-        id: genReminderId(),
-        petId: form.type === "pet" ? form.petOrTask : null,
-        taskId: form.type === "task" ? form.petOrTask : null,
-        type: form.type,
-        title: form.title.trim(),
-        dueDate: form.dueDateTime,
-        notes: form.notes.trim(),
-      },
-    ]);
+    if (editId) {
+      // Edit mode: update existing reminder by ID
+      setReminders((old) =>
+        old.map((rem) =>
+          rem.id === editId
+            ? {
+                ...rem,
+                petId: form.type === "pet" ? form.petOrTask : null,
+                taskId: form.type === "task" ? form.petOrTask : null,
+                type: form.type,
+                title: form.title.trim(),
+                dueDate: form.dueDateTime,
+                notes: form.notes.trim(),
+              }
+            : rem
+        )
+      );
+    } else {
+      // Add mode
+      setReminders((old) => [
+        ...old,
+        {
+          id: genReminderId(),
+          petId: form.type === "pet" ? form.petOrTask : null,
+          taskId: form.type === "task" ? form.petOrTask : null,
+          type: form.type,
+          title: form.title.trim(),
+          dueDate: form.dueDateTime,
+          notes: form.notes.trim(),
+        },
+      ]);
+    }
     setForm(initialForm);
     setFormError("");
+    setEditId(null);
+    setShowForm(false);
   };
 
   // PUBLIC_INTERFACE
@@ -78,6 +101,29 @@ function Settings() {
     if (window.confirm("Delete this reminder?")) {
       setReminders((old) => old.filter((rem) => rem.id !== reminderId));
     }
+  };
+
+  // Handler to enter edit mode: prepopulate form, set editId, show form at the top
+  // PUBLIC_INTERFACE
+  const handleEditReminder = (rem) => {
+    setForm({
+      title: rem.title || "",
+      petOrTask: rem.type === "pet" ? rem.petId || "" : rem.taskId || "",
+      type: rem.type,
+      dueDateTime: rem.dueDate || "",
+      notes: rem.notes || "",
+    });
+    setEditId(rem.id);
+    setShowForm(true);
+    setFormError("");
+  };
+
+  // PUBLIC_INTERFACE
+  const handleCancelForm = () => {
+    setForm(initialForm);
+    setEditId(null);
+    setShowForm(false);
+    setFormError("");
   };
 
   // For selection: show pets and tasks
