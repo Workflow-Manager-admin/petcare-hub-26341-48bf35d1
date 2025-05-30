@@ -21,6 +21,7 @@ function TaskScheduler() {
     time: "",
     notes: "",
   });
+  const [editId, setEditId] = useState(null); // If non-null, editing a task
   const [formError, setFormError] = useState("");
 
   // Unique Task ID generator (timestamp + random)
