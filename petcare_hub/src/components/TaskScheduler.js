@@ -402,17 +402,38 @@ function TaskScheduler() {
                   ) : (
                     <ul style={{ margin: 0, paddingLeft: 12 }}>
                       {petTasks.map((task) => (
-                        <li key={task.id} style={{ marginBottom: 7 }}>
-                          <span>{task.description}</span>{" "}
-                          <span style={{ color: "#888", fontSize: 12 }}>
-                            {task.frequency ? `(${task.frequency})` : ""}
-                            {task.times ? ` at ${Array.isArray(task.times) ? task.times.join(", ") : task.times}` : ""}
-                          </span>
-                          {task.notes && (
-                            <span style={{ color: "#aaa", fontSize: 11, marginLeft: 4 }}>
-                              - {task.notes}
+                        <li key={task.id} style={{ marginBottom: 7, display: "flex", alignItems: "center" }}>
+                          <span>
+                            {task.description}{" "}
+                            <span style={{ color: "#888", fontSize: 12 }}>
+                              {task.frequency ? `(${task.frequency})` : ""}
+                              {task.times ? ` at ${Array.isArray(task.times) ? task.times.join(", ") : task.times}` : ""}
                             </span>
-                          )}
+                            {task.notes && (
+                              <span style={{ color: "#aaa", fontSize: 11, marginLeft: 4 }}>
+                                - {task.notes}
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            className="btn"
+                            style={{
+                              marginLeft: 12,
+                              background: "var(--kavia-orange)",
+                              color: "#fff",
+                              borderRadius: 6,
+                              fontSize: 13,
+                              padding: "3px 14px"
+                            }}
+                            aria-label={`Delete task "${task.description}"`}
+                            title="Delete task"
+                            onClick={() => {
+                              // Remove task from global state using setTasks
+                              setTasks(prevTasks => prevTasks.filter(t => t.id !== task.id));
+                            }}
+                          >
+                            Delete
+                          </button>
                         </li>
                       ))}
                     </ul>
