@@ -94,6 +94,14 @@ function PetProfiles() {
     }
   };
 
+  // PUBLIC_INTERFACE
+  /** Handler to delete a pet profile by id, updates state immutably. */
+  const handleDeletePet = (id) => {
+    if (window.confirm("Are you sure you want to delete this pet profile?")) {
+      setPets((oldPets) => oldPets.filter((pet) => pet.id !== id));
+    }
+  };
+
   return (
     <section aria-label="Pet Profiles" style={{ width: "100%" }}>
       <h2 style={{ color: "var(--primary)", marginBottom: "18px", fontWeight: 600 }}>
@@ -118,6 +126,7 @@ function PetProfiles() {
                 gap: 16,
                 alignItems: "center",
                 padding: "14px 18px",
+                position: "relative"
               }}
             >
               {pet.photo && (
@@ -133,7 +142,7 @@ function PetProfiles() {
                   }}
                 />
               )}
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: 17 }}>{pet.name || "Unnamed Pet"}</div>
                 <div style={{ fontSize: 13, color: "#777" }}>
                   {[
@@ -150,6 +159,25 @@ function PetProfiles() {
                   </div>
                 )}
               </div>
+              {/* Delete Button for this pet profile */}
+              <button
+                className="btn"
+                aria-label={`Delete pet profile for ${pet.name || "pet"}`}
+                title="Delete pet"
+                style={{
+                  background: "var(--kavia-orange)",
+                  color: "#fff",
+                  padding: "6px 16px",
+                  fontSize: 14,
+                  borderRadius: 7,
+                  marginLeft: 10,
+                  fontWeight: 600,
+                  border: "none"
+                }}
+                onClick={() => handleDeletePet(pet.id)}
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>
